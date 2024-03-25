@@ -80,7 +80,7 @@ class FLOFOImportance:
         result_queue.put((feature_name, test_score))
         return test_score
 
-    def get_importance(self, num_sampling=10, random_state=0):
+    def get_importance(self, num_sampling=10, random_state=0, features_subset=None):
         """Run FLOFO to get feature importances
 
         Parameters
@@ -89,6 +89,8 @@ class FLOFOImportance:
             Number of times features are shuffled
         random_state : int, optional
             Random seed
+        features_subset : list of strings, optional
+            Subset of features to run FLOFO on
 
         Returns
         -------
@@ -98,15 +100,16 @@ class FLOFOImportance:
         np.random.seed(random_state)
         base_score = self._get_score(self.df)
         self.num_sampling = num_sampling
+        features = features_subset if features_subset is not None else self.features
 
         if self.n_jobs is not None and self.n_jobs > 1:
-            lofo_cv_scores = parallel_apply(self._run_parallel, self.features, self.n_jobs)
+            lofo_cv_scores = parallel_apply(self._run_parallel, features, self.n_jobs)
             lofo_cv_scores_normalized = np.array([base_score - lofo_cv_score for f, lofo_cv_score in lofo_cv_scores])
-            self.features = [score[0] for score in lofo_cv_scores]
+            features = [score[0] for score in lofo_cv_scores]
         else:
             lofo_cv_scores = []
-            for f in tqdm(self.features):
+            for f in tqdm(features):
                 lofo_cv_scores.append(self._run(f, num_sampling))
             lofo_cv_scores_normalized = np.array([base_score - lofo_cv_score for lofo_cv_score in lofo_cv_scores])
 
-        return lofo_to_df(lofo_cv_scores_normalized, self.features)
+        return lofo_to_df(lofo_cv_scores_normalized, features)
