@@ -56,10 +56,11 @@ class FLOFOImportance:
 
     def _bin_features(self):
         epsilon = 1e-10
-        self.bin_df = pd.DataFrame()
+        bin_dict = dict()
         for feature in self.features:
-            self.bin_df[feature] = self.df[feature].fillna(self.df[feature].median())
-            self.bin_df[feature] = (self.bin_df[feature].rank(pct=True)*(self.num_bins - epsilon)).astype(np.int32)
+            bin_dict[feature] = self.df[feature].fillna(self.df[feature].median())
+            bin_dict[feature] = (bin_dict[feature].rank(pct=True)*(self.num_bins - epsilon)).astype(np.int32)
+        self.bin_df = pd.DataFrame(bin_dict)
 
     def _get_score(self, updated_df):
         return self.scorer(self.trained_model, updated_df[self.features], self.df[self.target])
